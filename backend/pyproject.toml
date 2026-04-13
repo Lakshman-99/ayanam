@@ -1,0 +1,74 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "kp-astro-backend"
+version = "0.1.0"
+description = "Enterprise KP Astrology SaaS Platform API"
+requires-python = ">=3.12"
+dependencies = [
+    # Web framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "gunicorn>=23.0.0",
+    "python-multipart>=0.0.12",
+
+    # Database
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "psycopg2-binary>=2.9.10",
+    "alembic>=1.14.0",
+
+    # Validation & settings
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0",
+    "pydantic[email]>=2.10.0",
+
+    # Auth
+    "python-jose[cryptography]>=3.3.0",
+    "bcrypt>=4.0.0",
+    "cryptography>=43.0.0",
+
+    # Cache & task queue
+    "redis>=5.2.0",
+    "celery[redis]>=5.4.0",
+
+    # Astronomy — pysweph is the maintained community fork of pyswisseph (same API)
+    # pyswisseph original maintainer went unresponsive mid-2025
+    "pysweph>=2.10.3.2",
+
+    # Utilities
+    "structlog>=24.4.0",
+    "slowapi>=0.1.9",
+    "httpx>=0.28.0",
+    "pytz>=2024.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "aiosqlite>=0.20.0",
+    "factory-boy>=3.3.1",
+    "freezegun>=1.5.1",
+    "anyio>=4.7.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B"]
+ignore = ["B008"]  # do not perform function calls in default arguments (FastAPI pattern)

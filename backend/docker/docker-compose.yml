@@ -1,0 +1,137 @@
+version: "3.9"
+
+# =============================================================================
+# KP Astrology API — Development Docker Compose
+# For production, use the managed DB and Redis services.
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # API Server
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://kp_user:Astro2026@postgres:5432/kp_astro
+      DATABASE_URL_SYNC: postgresql+psycopg2://kp_user:Astro2026@postgres:5432/kp_astro
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      EPHE_PATH: /app/data/ephemeris
+    volumes:
+      - ../keys:/app/keys:ro        # JWT RSA key pair (never commit these)
+      - ../data/ephemeris:/app/data/ephemeris:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Celery Worker
+  # ---------------------------------------------------------------------------
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://kp_user:Astro2026@postgres:5432/kp_astro
+      DATABASE_URL_SYNC: postgresql+psycopg2://kp_user:Astro2026@postgres:5432/kp_astro
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    volumes:
+      - ../keys:/app/keys:ro
+      - ../data/ephemeris:/app/data/ephemeris:ro
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Celery Beat Scheduler
+  # ---------------------------------------------------------------------------
+  beat:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    env_file:
+      - ../.env
+    environment:
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: kp_astro
+      POSTGRES_USER: kp_user
+      POSTGRES_PASSWORD: Astro2026
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"  # 5433 on host → avoids clash with local Windows Postgres on 5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kp_user -d kp_astro"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Redis 7
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Database migrations (run once with: docker compose --profile migrate up migrate)
+  # ---------------------------------------------------------------------------
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    command: alembic upgrade head
+    env_file:
+      - ../.env
+    environment:
+      DATABASE_URL_SYNC: postgresql+psycopg2://kp_user:Astro2026@postgres:5432/kp_astro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles:
+      - migrate
+
+volumes:
+  postgres_data:
+  redis_data:
