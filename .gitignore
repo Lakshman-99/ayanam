@@ -1,0 +1,66 @@
+# =============================================================================
+# KP Astrology Backend — .gitignore
+# =============================================================================
+
+# Secrets — NEVER commit
+.env
+keys/
+*.pem
+
+# Virtual environment
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*.pyo
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.cache/
+
+# Type checking
+.mypy_cache/
+.pytype/
+pyrightconfig.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Alembic (keep versions, not pycache)
+alembic/versions/__pycache__/
+
+# Ephemeris data files (large binary files — download separately)
+data/ephemeris/*.se1
+data/ephemeris/*.se2
+data/ephemeris/*.swe
+
+# Logs
+*.log
+logs/
+
+# Docker
+.docker/
+.claude/
