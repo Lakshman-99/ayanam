@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # Application
     # -------------------------------------------------------------------------
     app_env: Literal["development", "staging", "production"] = "development"
-    app_name: str = "KP Astrology API"
+    app_name: str = "Ayanam Astrology API"
     debug: bool = False
     log_level: str = "INFO"
     allowed_origins: list[str] = ["http://localhost:3000"]
@@ -46,8 +46,8 @@ class Settings(BaseSettings):
     jwt_private_key_path: Path = Path("./keys/private.pem")
     jwt_public_key_path: Path = Path("./keys/public.pem")
     jwt_algorithm: str = "RS256"
-    jwt_access_token_expire_minutes: int = 15
-    jwt_refresh_token_expire_days: int = 30
+    jwt_access_token_expire_minutes: int = 60
+    jwt_refresh_token_expire_days: int = 7
 
     # Populated by validator below — never set directly in .env
     jwt_private_key: str = ""

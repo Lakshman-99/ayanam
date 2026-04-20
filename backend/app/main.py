@@ -15,6 +15,7 @@ from app.config import Settings, get_settings
 from app.core.exceptions import register_exception_handlers
 from app.core.middleware import RequestIDMiddleware, TenantMiddleware
 from app.routers import auth, charts
+from app.routers import clients
 
 
 def _configure_logging(settings: Settings) -> None:
@@ -156,6 +157,7 @@ def create_app() -> FastAPI:
     # -------------------------------------------------------------------------
     app.include_router(auth.router, prefix="/api/v1")
     app.include_router(charts.router, prefix="/api/v1")
+    app.include_router(clients.router, prefix="/api/v1")
 
     # -------------------------------------------------------------------------
     # Health endpoints
