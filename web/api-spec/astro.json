@@ -1,0 +1,1368 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "KP Astrology API",
+    "description": "Enterprise KP (Krishnamurti Paddhati) Astrology SaaS Platform API. Accurate natal charts, horary, matching, and real-time panchang.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Register",
+        "description": "Register a new tenant + owner user.\nCreates: Tenant → User (role=tenant_admin) → free Subscription → tokens.",
+        "operationId": "register_api_v1_auth_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RegisterRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Login",
+        "description": "Authenticate with email + password. Returns token pair.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/LoginRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Refresh",
+        "description": "Rotate refresh token — validates old, issues new pair, revokes old.\nReuse of a revoked refresh token should trigger all sessions to be invalidated.",
+        "operationId": "refresh_api_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RefreshRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/TokenResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Logout",
+        "description": "Revoke a specific refresh token (logout from one device).",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/RefreshRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": { "description": "Successful Response" },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["Authentication"],
+        "summary": "Me",
+        "description": "Return the current authenticated user's profile.",
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserOut" }
+              }
+            }
+          }
+        },
+        "security": [{ "HTTPBearer": [] }]
+      },
+      "put": {
+        "tags": ["Authentication"],
+        "summary": "Update Profile",
+        "description": "Update the current user's profile.",
+        "operationId": "update_profile_api_v1_auth_me_put",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateProfileRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/UserOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "HTTPBearer": [] }]
+      }
+    },
+    "/api/v1/charts/natal": {
+      "post": {
+        "tags": ["Charts"],
+        "summary": "Create Natal Chart",
+        "description": "Generate a KP natal chart. Stores full chart data as JSONB.",
+        "operationId": "create_natal_chart_api_v1_charts_natal_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ChartCreateRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChartOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "HTTPBearer": [] }]
+      }
+    },
+    "/api/v1/charts/horary": {
+      "post": {
+        "tags": ["Charts"],
+        "summary": "Create Horary Chart",
+        "description": "Generate a KP horary chart from a number (1–249).",
+        "operationId": "create_horary_chart_api_v1_charts_horary_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/HoraryChartRequest" }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChartOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        },
+        "security": [{ "HTTPBearer": [] }]
+      }
+    },
+    "/api/v1/charts": {
+      "get": {
+        "tags": ["Charts"],
+        "summary": "List Charts",
+        "description": "List all charts for the current tenant (paginated).",
+        "operationId": "list_charts_api_v1_charts_get",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "client_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "format": "uuid" },
+                { "type": "null" }
+              ],
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ChartListItem_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/charts/{chart_id}": {
+      "get": {
+        "tags": ["Charts"],
+        "summary": "Get Chart",
+        "description": "Retrieve a specific chart by ID.",
+        "operationId": "get_chart_api_v1_charts__chart_id__get",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "chart_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Chart Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChartOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Charts"],
+        "summary": "Delete Chart",
+        "description": "Soft-delete a chart.",
+        "operationId": "delete_chart_api_v1_charts__chart_id__delete",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "chart_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Chart Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Successful Response" },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clients": {
+      "get": {
+        "tags": ["Clients"],
+        "summary": "List Clients",
+        "description": "List clients for the current tenant with optional search and sorting.",
+        "operationId": "list_clients_api_v1_clients_get",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Page"
+            }
+          },
+          {
+            "name": "page_size",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 20,
+              "title": "Page Size"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                { "type": "string", "maxLength": 200 },
+                { "type": "null" }
+              ],
+              "title": "Search"
+            }
+          },
+          {
+            "name": "sort_by",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "created_at",
+              "title": "Sort By"
+            }
+          },
+          {
+            "name": "sort_order",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "pattern": "^(asc|desc)$",
+              "default": "desc",
+              "title": "Sort Order"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClientListResponse" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Clients"],
+        "summary": "Create Client",
+        "description": "Create a new client record.",
+        "operationId": "create_client_api_v1_clients_post",
+        "security": [{ "HTTPBearer": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClientCreate" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClientOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clients/{client_id}": {
+      "get": {
+        "tags": ["Clients"],
+        "summary": "Get Client",
+        "description": "Get a single client by ID.",
+        "operationId": "get_client_api_v1_clients__client_id__get",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClientOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Clients"],
+        "summary": "Update Client",
+        "description": "Update client fields.",
+        "operationId": "update_client_api_v1_clients__client_id__patch",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ClientUpdate" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ClientOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Clients"],
+        "summary": "Delete Client",
+        "description": "Soft-delete a client.",
+        "operationId": "delete_client_api_v1_clients__client_id__delete",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": { "description": "Successful Response" },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clients/{client_id}/chart": {
+      "get": {
+        "tags": ["Clients"],
+        "summary": "Get Client Chart",
+        "description": "Return the most recent natal chart for a client.",
+        "operationId": "get_client_chart_api_v1_clients__client_id__chart_get",
+        "security": [{ "HTTPBearer": [] }],
+        "parameters": [
+          {
+            "name": "client_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Client Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ChartOut" }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/HTTPValidationError" }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChartCreateRequest": {
+        "properties": {
+          "birth_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Birth Name"
+          },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "birth_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Birth Time"
+          },
+          "birth_tz": {
+            "type": "string",
+            "title": "Birth Tz",
+            "description": "IANA timezone string, e.g. 'Asia/Kolkata'"
+          },
+          "birth_lat": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Birth Lat",
+            "description": "Latitude in decimal degrees"
+          },
+          "birth_lon": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Birth Lon",
+            "description": "Longitude in decimal degrees"
+          },
+          "birth_location_name": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255 },
+              { "type": "null" }
+            ],
+            "title": "Birth Location Name"
+          },
+          "client_id": {
+            "anyOf": [
+              { "type": "string", "format": "uuid" },
+              { "type": "null" }
+            ],
+            "title": "Client Id"
+          },
+          "ayanamsa": {
+            "type": "string",
+            "title": "Ayanamsa",
+            "description": "Ayanamsa: KP | Lahiri | Raman",
+            "default": "KP"
+          },
+          "house_system": {
+            "type": "string",
+            "title": "House System",
+            "description": "House system: Placidus | Koch | Equal",
+            "default": "Placidus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "birth_name",
+          "birth_date",
+          "birth_time",
+          "birth_tz",
+          "birth_lat",
+          "birth_lon"
+        ],
+        "title": "ChartCreateRequest",
+        "description": "Request body for creating a natal chart."
+      },
+      "ChartListItem": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "chart_type": { "type": "string", "title": "Chart Type" },
+          "birth_name": { "type": "string", "title": "Birth Name" },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "birth_location_name": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Birth Location Name"
+          },
+          "calculated_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Calculated At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "client_id": {
+            "anyOf": [
+              { "type": "string", "format": "uuid" },
+              { "type": "null" }
+            ],
+            "title": "Client Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "chart_type",
+          "birth_name",
+          "birth_date",
+          "birth_location_name",
+          "calculated_at",
+          "created_at",
+          "client_id"
+        ],
+        "title": "ChartListItem",
+        "description": "Lightweight chart summary for list views."
+      },
+      "ChartOut": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "chart_type": { "type": "string", "title": "Chart Type" },
+          "birth_name": { "type": "string", "title": "Birth Name" },
+          "birth_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Birth Date"
+          },
+          "birth_time": {
+            "type": "string",
+            "format": "time",
+            "title": "Birth Time"
+          },
+          "birth_tz": { "type": "string", "title": "Birth Tz" },
+          "birth_lat": { "type": "number", "title": "Birth Lat" },
+          "birth_lon": { "type": "number", "title": "Birth Lon" },
+          "birth_location_name": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Birth Location Name"
+          },
+          "ayanamsa": { "type": "string", "title": "Ayanamsa" },
+          "house_system": { "type": "string", "title": "House System" },
+          "chart_data": {
+            "anyOf": [
+              { "additionalProperties": true, "type": "object" },
+              { "type": "null" }
+            ],
+            "title": "Chart Data"
+          },
+          "engine_version": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Engine Version"
+          },
+          "calculated_at": {
+            "anyOf": [
+              { "type": "string", "format": "date-time" },
+              { "type": "null" }
+            ],
+            "title": "Calculated At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "client_id": {
+            "anyOf": [
+              { "type": "string", "format": "uuid" },
+              { "type": "null" }
+            ],
+            "title": "Client Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "chart_type",
+          "birth_name",
+          "birth_date",
+          "birth_time",
+          "birth_tz",
+          "birth_lat",
+          "birth_lon",
+          "birth_location_name",
+          "ayanamsa",
+          "house_system",
+          "chart_data",
+          "engine_version",
+          "calculated_at",
+          "created_at",
+          "client_id"
+        ],
+        "title": "ChartOut",
+        "description": "Chart response — includes full computed data."
+      },
+      "ClientCreate": {
+        "properties": {
+          "full_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Full Name"
+          },
+          "gender": {
+            "type": "string",
+            "pattern": "^(male|female|other)$",
+            "title": "Gender",
+            "default": "male"
+          },
+          "date_of_birth": {
+            "type": "string",
+            "format": "date",
+            "title": "Date Of Birth"
+          },
+          "time_of_birth": {
+            "type": "string",
+            "format": "time",
+            "title": "Time Of Birth"
+          },
+          "place_of_birth": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Place Of Birth"
+          },
+          "latitude": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude"
+          },
+          "longitude": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude"
+          },
+          "timezone": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Timezone"
+          },
+          "notes": {
+            "anyOf": [
+              { "type": "string", "maxLength": 5000 },
+              { "type": "null" }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "full_name",
+          "date_of_birth",
+          "time_of_birth",
+          "place_of_birth",
+          "latitude",
+          "longitude",
+          "timezone"
+        ],
+        "title": "ClientCreate"
+      },
+      "ClientListItem": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "full_name": { "type": "string", "title": "Full Name" },
+          "gender": { "type": "string", "title": "Gender" },
+          "date_of_birth": {
+            "type": "string",
+            "format": "date",
+            "title": "Date Of Birth"
+          },
+          "place_of_birth": { "type": "string", "title": "Place Of Birth" },
+          "lagna_sign": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Lagna Sign"
+          },
+          "current_dasha": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Current Dasha"
+          },
+          "natal_chart_id": {
+            "anyOf": [
+              { "type": "string", "format": "uuid" },
+              { "type": "null" }
+            ],
+            "title": "Natal Chart Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "full_name",
+          "gender",
+          "date_of_birth",
+          "place_of_birth",
+          "created_at"
+        ],
+        "title": "ClientListItem"
+      },
+      "ClientListResponse": {
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/ClientListItem" },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": { "type": "integer", "title": "Total" },
+          "page": { "type": "integer", "title": "Page" },
+          "page_size": { "type": "integer", "title": "Page Size" },
+          "has_more": { "type": "boolean", "title": "Has More" }
+        },
+        "type": "object",
+        "required": ["items", "total", "page", "page_size", "has_more"],
+        "title": "ClientListResponse"
+      },
+      "ClientOut": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tenant Id"
+          },
+          "full_name": { "type": "string", "title": "Full Name" },
+          "gender": { "type": "string", "title": "Gender" },
+          "date_of_birth": {
+            "type": "string",
+            "format": "date",
+            "title": "Date Of Birth"
+          },
+          "time_of_birth": {
+            "type": "string",
+            "format": "time",
+            "title": "Time Of Birth"
+          },
+          "place_of_birth": { "type": "string", "title": "Place Of Birth" },
+          "latitude": { "type": "number", "title": "Latitude" },
+          "longitude": { "type": "number", "title": "Longitude" },
+          "timezone": { "type": "string", "title": "Timezone" },
+          "lagna_sign": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Lagna Sign"
+          },
+          "lagna_degree": {
+            "anyOf": [{ "type": "number" }, { "type": "null" }],
+            "title": "Lagna Degree"
+          },
+          "current_dasha": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Current Dasha"
+          },
+          "natal_chart_id": {
+            "anyOf": [
+              { "type": "string", "format": "uuid" },
+              { "type": "null" }
+            ],
+            "title": "Natal Chart Id"
+          },
+          "notes": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Notes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tenant_id",
+          "full_name",
+          "gender",
+          "date_of_birth",
+          "time_of_birth",
+          "place_of_birth",
+          "latitude",
+          "longitude",
+          "timezone",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ClientOut"
+      },
+      "ClientUpdate": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255, "minLength": 1 },
+              { "type": "null" }
+            ],
+            "title": "Full Name"
+          },
+          "gender": {
+            "anyOf": [
+              { "type": "string", "pattern": "^(male|female|other)$" },
+              { "type": "null" }
+            ],
+            "title": "Gender"
+          },
+          "date_of_birth": {
+            "anyOf": [
+              { "type": "string", "format": "date" },
+              { "type": "null" }
+            ],
+            "title": "Date Of Birth"
+          },
+          "time_of_birth": {
+            "anyOf": [
+              { "type": "string", "format": "time" },
+              { "type": "null" }
+            ],
+            "title": "Time Of Birth"
+          },
+          "place_of_birth": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255 },
+              { "type": "null" }
+            ],
+            "title": "Place Of Birth"
+          },
+          "latitude": {
+            "anyOf": [
+              { "type": "number", "maximum": 90.0, "minimum": -90.0 },
+              { "type": "null" }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              { "type": "number", "maximum": 180.0, "minimum": -180.0 },
+              { "type": "null" }
+            ],
+            "title": "Longitude"
+          },
+          "timezone": {
+            "anyOf": [
+              { "type": "string", "maxLength": 64 },
+              { "type": "null" }
+            ],
+            "title": "Timezone"
+          },
+          "notes": {
+            "anyOf": [
+              { "type": "string", "maxLength": 5000 },
+              { "type": "null" }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "ClientUpdate"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": { "$ref": "#/components/schemas/ValidationError" },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HoraryChartRequest": {
+        "properties": {
+          "horary_number": {
+            "type": "integer",
+            "maximum": 249.0,
+            "minimum": 1.0,
+            "title": "Horary Number",
+            "description": "KP horary number (1-249)"
+          },
+          "birth_lat": {
+            "type": "number",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Birth Lat"
+          },
+          "birth_lon": {
+            "type": "number",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Birth Lon"
+          },
+          "birth_location_name": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Birth Location Name"
+          },
+          "query_note": {
+            "anyOf": [
+              { "type": "string", "maxLength": 500 },
+              { "type": "null" }
+            ],
+            "title": "Query Note",
+            "description": "The question being asked"
+          }
+        },
+        "type": "object",
+        "required": ["horary_number", "birth_lat", "birth_lon"],
+        "title": "HoraryChartRequest",
+        "description": "Request body for a KP horary chart."
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": { "type": "string", "format": "email", "title": "Email" },
+          "password": { "type": "string", "title": "Password" }
+        },
+        "type": "object",
+        "required": ["email", "password"],
+        "title": "LoginRequest"
+      },
+      "PaginatedResponse_ChartListItem_": {
+        "properties": {
+          "items": {
+            "items": { "$ref": "#/components/schemas/ChartListItem" },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": { "type": "integer", "title": "Total" },
+          "page": { "type": "integer", "title": "Page" },
+          "page_size": { "type": "integer", "title": "Page Size" },
+          "pages": { "type": "integer", "title": "Pages" }
+        },
+        "type": "object",
+        "required": ["items", "total", "page", "page_size", "pages"],
+        "title": "PaginatedResponse[ChartListItem]"
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": { "type": "string", "title": "Refresh Token" }
+        },
+        "type": "object",
+        "required": ["refresh_token"],
+        "title": "RefreshRequest"
+      },
+      "RegisterRequest": {
+        "properties": {
+          "email": { "type": "string", "format": "email", "title": "Email" },
+          "password": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 8,
+            "title": "Password"
+          },
+          "full_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Full Name"
+          },
+          "tenant_slug": {
+            "type": "string",
+            "maxLength": 63,
+            "minLength": 3,
+            "title": "Tenant Slug",
+            "description": "URL-safe slug for subdomain (e.g. 'astrojohn')"
+          },
+          "tenant_display_name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Tenant Display Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "password",
+          "full_name",
+          "tenant_slug",
+          "tenant_display_name"
+        ],
+        "title": "RegisterRequest",
+        "description": "Register a new tenant + owner user in one step."
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": { "type": "string", "title": "Access Token" },
+          "refresh_token": { "type": "string", "title": "Refresh Token" },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in": { "type": "integer", "title": "Expires In" }
+        },
+        "type": "object",
+        "required": ["access_token", "refresh_token", "expires_in"],
+        "title": "TokenResponse"
+      },
+      "UpdateProfileRequest": {
+        "properties": {
+          "full_name": {
+            "anyOf": [
+              { "type": "string", "maxLength": 255, "minLength": 1 },
+              { "type": "null" }
+            ],
+            "title": "Full Name"
+          },
+          "phone": {
+            "anyOf": [
+              { "type": "string", "maxLength": 30 },
+              { "type": "null" }
+            ],
+            "title": "Phone"
+          },
+          "language": {
+            "anyOf": [
+              { "type": "string", "maxLength": 10, "minLength": 2 },
+              { "type": "null" }
+            ],
+            "title": "Language"
+          }
+        },
+        "type": "object",
+        "title": "UpdateProfileRequest"
+      },
+      "UserOut": {
+        "properties": {
+          "id": { "type": "string", "format": "uuid", "title": "Id" },
+          "email": { "type": "string", "title": "Email" },
+          "full_name": { "type": "string", "title": "Full Name" },
+          "role": { "$ref": "#/components/schemas/UserRole" },
+          "language": { "type": "string", "title": "Language" },
+          "tenant_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tenant Id"
+          },
+          "is_active": { "type": "boolean", "title": "Is Active" },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "full_name",
+          "role",
+          "language",
+          "tenant_id",
+          "is_active",
+          "created_at"
+        ],
+        "title": "UserOut"
+      },
+      "UserRole": {
+        "type": "string",
+        "enum": [
+          "super_admin",
+          "tenant_admin",
+          "astrologer",
+          "student",
+          "client_viewer"
+        ],
+        "title": "UserRole"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": { "anyOf": [{ "type": "string" }, { "type": "integer" }] },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": { "type": "string", "title": "Message" },
+          "type": { "type": "string", "title": "Error Type" },
+          "input": { "title": "Input" },
+          "ctx": { "type": "object", "title": "Context" }
+        },
+        "type": "object",
+        "required": ["loc", "msg", "type"],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": { "HTTPBearer": { "type": "http", "scheme": "bearer" } }
+  }
+}
