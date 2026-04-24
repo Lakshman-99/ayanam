@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "Ayanam",
+    "tagline": "KP Astrology Platform"
+  },
+  "actions": {
+    "sign_in": "Sign in",
+    "sign_out": "Sign out",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "loading": "Loading…"
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again."
+  }
+}
