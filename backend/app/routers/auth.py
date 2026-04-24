@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 import structlog
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -37,6 +37,7 @@ from app.schemas.auth import (
 
 log = structlog.get_logger()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+REFRESH_COOKIE_NAME = "refresh_token"
 
 
 def _make_token_response(
@@ -95,6 +96,29 @@ async def _store_refresh_token(
     db.add(rt)
 
 
+def _set_refresh_cookie(response: Response, refresh_token: str, settings: Settings) -> None:
+    response.set_cookie(
+        key=REFRESH_COOKIE_NAME,
+        value=refresh_token,
+        httponly=True,
+        secure=settings.is_production,
+        samesite="strict",
+        max_age=settings.jwt_refresh_token_expire_days * 24 * 60 * 60,
+        path="/",
+    )
+
+
+def _get_refresh_token(request: Request, body: RefreshRequest | None) -> str:
+    if body and body.refresh_token:
+        return body.refresh_token
+
+    cookie_token = request.cookies.get(REFRESH_COOKIE_NAME)
+    if cookie_token:
+        return cookie_token
+
+    raise AuthenticationError("Refresh token missing")
+
+
 # =============================================================================
 # Endpoints
 # =============================================================================
@@ -103,6 +127,7 @@ async def _store_refresh_token(
 async def register(
     body: RegisterRequest,
     request: Request,
+    response: Response,
     db: DbSession,
     settings: AppSettings,
 ) -> TokenResponse:
@@ -148,8 +173,11 @@ async def register(
         )
         db.add(sub)
 
-    token_response, _, jti = _make_token_response(user, settings, request)
+    token_response, refresh_token_str, jti = _make_token_response(
+        user, settings, request
+    )
     await _store_refresh_token(db, user, jti, settings, request)
+    _set_refresh_cookie(response, refresh_token_str, settings)
 
     log.info("tenant_registered", tenant_slug=body.tenant_slug, user_email=body.email)
     return token_response
@@ -159,6 +187,7 @@ async def register(
 async def login(
     body: LoginRequest,
     request: Request,
+    response: Response,
     db: DbSession,
     settings: AppSettings,
 ) -> TokenResponse:
@@ -185,8 +214,11 @@ async def login(
     # Update last login
     user.last_login_at = datetime.now(tz=timezone.utc)
 
-    token_response, _, jti = _make_token_response(user, settings, request)
+    token_response, refresh_token_str, jti = _make_token_response(
+        user, settings, request
+    )
     await _store_refresh_token(db, user, jti, settings, request)
+    _set_refresh_cookie(response, refresh_token_str, settings)
 
     log.info("user_login", user_id=str(user.id), tenant_id=str(user.tenant_id))
     return token_response
@@ -194,8 +226,9 @@ async def login(
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh(
-    body: RefreshRequest,
+    body: RefreshRequest | None,
     request: Request,
+    response: Response,
     db: DbSession,
     settings: AppSettings,
 ) -> TokenResponse:
@@ -205,8 +238,10 @@ async def refresh(
     """
     from app.core.security import decode_token
 
+    refresh_token = _get_refresh_token(request, body)
+
     payload = decode_token(
-        token=body.refresh_token,
+        token=refresh_token,
         public_key=settings.jwt_public_key,
         algorithm=settings.jwt_algorithm,
     )
@@ -245,15 +280,20 @@ async def refresh(
         raise AuthenticationError("User not found or inactive")
 
     # Issue new pair
-    token_response, _, new_jti = _make_token_response(user, settings, request)
+    token_response, new_refresh_token, new_jti = _make_token_response(
+        user, settings, request
+    )
     await _store_refresh_token(db, user, new_jti, settings, request)
+    _set_refresh_cookie(response, new_refresh_token, settings)
 
     return token_response
 
 
 @router.post("/logout", status_code=204)
 async def logout(
-    body: RefreshRequest,
+    body: RefreshRequest | None,
+    request: Request,
+    response: Response,
     db: DbSession,
     settings: AppSettings,
 ) -> None:
@@ -261,8 +301,9 @@ async def logout(
     from app.core.security import decode_token
 
     try:
+        refresh_token = _get_refresh_token(request, body)
         payload = decode_token(
-            token=body.refresh_token,
+            token=refresh_token,
             public_key=settings.jwt_public_key,
             algorithm=settings.jwt_algorithm,
         )
@@ -273,6 +314,8 @@ async def logout(
             rt.revoked_at = datetime.now(tz=timezone.utc)
     except Exception:
         pass  # Logout should always succeed silently
+
+    response.delete_cookie(REFRESH_COOKIE_NAME, path="/")
 
 
 @router.get("/me", response_model=UserOut)
