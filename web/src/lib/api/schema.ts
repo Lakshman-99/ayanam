@@ -604,7 +604,7 @@ export interface components {
         /** RefreshRequest */
         RefreshRequest: {
             /** Refresh Token */
-            refresh_token: string;
+            refresh_token?: string | null;
         };
         /**
          * RegisterRequest
@@ -677,6 +677,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Entitlements
+             * @default []
+             */
+            entitlements: string[];
         };
         /**
          * UserRole
@@ -780,7 +785,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RefreshRequest"];
+                "application/json": components["schemas"]["RefreshRequest"] | null;
             };
         };
         responses: {
@@ -813,7 +818,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["RefreshRequest"];
+                "application/json": components["schemas"]["RefreshRequest"] | null;
             };
         };
         responses: {

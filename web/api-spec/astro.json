@@ -83,7 +83,13 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RefreshRequest" }
+              "schema": {
+                "anyOf": [
+                  { "$ref": "#/components/schemas/RefreshRequest" },
+                  { "type": "null" }
+                ],
+                "title": "Body"
+              }
             }
           },
           "required": true
@@ -117,7 +123,13 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/RefreshRequest" }
+              "schema": {
+                "anyOf": [
+                  { "$ref": "#/components/schemas/RefreshRequest" },
+                  { "type": "null" }
+                ],
+                "title": "Body"
+              }
             }
           },
           "required": true
@@ -1215,10 +1227,12 @@
       },
       "RefreshRequest": {
         "properties": {
-          "refresh_token": { "type": "string", "title": "Refresh Token" }
+          "refresh_token": {
+            "anyOf": [{ "type": "string" }, { "type": "null" }],
+            "title": "Refresh Token"
+          }
         },
         "type": "object",
-        "required": ["refresh_token"],
         "title": "RefreshRequest"
       },
       "RegisterRequest": {
@@ -1320,6 +1334,12 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "entitlements": {
+            "items": { "type": "string" },
+            "type": "array",
+            "title": "Entitlements",
+            "default": []
           }
         },
         "type": "object",
