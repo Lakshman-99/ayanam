@@ -79,6 +79,7 @@ class UserOut(BaseModel):
     tenant_id: UUID
     is_active: bool
     created_at: datetime
+    entitlements: list[str] = []
 
 
 class UpdateProfileRequest(BaseModel):

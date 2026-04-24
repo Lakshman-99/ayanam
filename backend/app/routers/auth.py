@@ -95,7 +95,12 @@ async def _store_refresh_token(
     )
     db.add(rt)
 
-
+"""
+One flag for later: SameSite=strict will break the moment you split into 
+api.aynamastrology.com + astrojohn.aynamastrology.com — strict blocks cross-site sends. 
+When you go subdomain, switch to SameSite=lax and set domain=".aynamastrology.com" so 
+the cookie is sent across all subdomains. Worth a TODO comment in the backend now.
+"""
 def _set_refresh_cookie(response: Response, refresh_token: str, settings: Settings) -> None:
     response.set_cookie(
         key=REFRESH_COOKIE_NAME,
@@ -118,6 +123,27 @@ def _get_refresh_token(request: Request, body: RefreshRequest | None) -> str:
 
     raise AuthenticationError("Refresh token missing")
 
+async def _get_entitlements(db: AsyncSession, tenant_id: UUID) -> list[str]:
+    """
+    Resolve active subscription → plan → enabled feature names.
+    Plan.features is a dict like {"astrology": true, "horary": false}.
+    Returns only the keys whose value is truthy.
+    """
+    sub = await db.scalar(
+        select(Subscription)
+        .where(
+            Subscription.tenant_id == tenant_id,
+            Subscription.status == "active",
+        )
+        .order_by(Subscription.current_period_end.desc())
+        .limit(1)
+    )
+    if not sub:
+        return []
+    plan = await db.get(Plan, sub.plan_id)
+    if not plan or not plan.features:
+        return []
+    return [k for k, v in plan.features.items() if v]
 
 # =============================================================================
 # Endpoints
@@ -319,9 +345,12 @@ async def logout(
 
 
 @router.get("/me", response_model=UserOut)
-async def me(user: CurrentUser) -> User:
+async def me(user: CurrentUser, db: DbSession) -> UserOut:
     """Return the current authenticated user's profile."""
-    return user
+    entitlements = await _get_entitlements(db, user.tenant_id)
+    return UserOut.model_validate(
+        {**user.__dict__, "entitlements": entitlements}
+    )
 
 
 @router.put("/me", response_model=UserOut)
@@ -329,7 +358,7 @@ async def update_profile(
     body: UpdateProfileRequest,
     user: CurrentUser,
     db: DbSession,
-) -> User:
+) -> UserOut:
     """Update the current user's profile."""
     if body.full_name is not None:
         user.full_name = body.full_name
@@ -337,4 +366,8 @@ async def update_profile(
         user.phone = body.phone
     if body.language is not None:
         user.language = body.language
-    return user
+    await db.flush()
+    entitlements = await _get_entitlements(db, user.tenant_id)
+    return UserOut.model_validate(
+        {**user.__dict__, "entitlements": entitlements}
+    )
