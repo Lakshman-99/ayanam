@@ -32,7 +32,13 @@ class Plan(Base):
     __tablename__ = "plans"
 
     tier: Mapped[PlanTier] = mapped_column(
-        Enum(PlanTier, native_enum=False), unique=True, nullable=False
+        Enum(
+            PlanTier,
+            native_enum=False,
+            values_callable=lambda x: [e.value for e in x],
+        ),
+        unique=True,
+        nullable=False,
     )
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
 

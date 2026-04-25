@@ -25,6 +25,7 @@ def _make_engine(settings: Settings):
         max_overflow=settings.db_max_overflow,
         echo=settings.debug,
         pool_pre_ping=True,
+        connect_args={"statement_cache_size": 0},
     )
 
 
